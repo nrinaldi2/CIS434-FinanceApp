@@ -1,4 +1,4 @@
-com\finance\financefx\MtlyExpenses.class
+com\finance\financefx\MtlyExpense.class
 com\finance\financefx\SystemInfo.class
 com\finance\financefx\UserBalance.class
 module-info.class
