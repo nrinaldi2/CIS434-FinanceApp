@@ -65,8 +65,11 @@ public class App extends Application {
         Label updateIncPromptLbl = new Label ();
         Label addEarnPromptLbl = new Label ();
         
+        
         // Account Overview Label Formatting
         
+        addEarnPromptLbl.setWrapText(true);
+        addEarnPromptLbl.setMaxWidth(400);
         
         // Account Overview Text Field Declarations
         TextField updateBalTF = new TextField();
@@ -81,25 +84,83 @@ public class App extends Application {
         updateBalBtn.setOnAction(ActionEvent -> {
             try{
                 double userBal = Double.parseDouble(updateBalTF.getText());
-                
-                ub1.setTotal(userBal);
-                totUserAccBalLbl.setText("Your total account balance is: $" + ub1.GetTotal());
+                if(userBal > 0){
+                ub1.SetTotal(userBal);
+                totUserAccBalLbl.setText("Your total account balance is: $" + String.format("%,.2f", userBal));
                 updateBalTF.clear();
+                updateBalPromptLbl.setText(" ");
+                }
+                else{
+                    updateBalPromptLbl.setText("Please type a positive number, with only 2 decimal places, above.");
+                    updateBalTF.clear();
+                }
                 
             }
             catch (Exception e){
                 updateBalPromptLbl.setText("Please type a positive number, with only 2 decimal places, above.");
+                updateBalTF.clear();
             } 
         }); //Update balance button
         
         Button updateIncBtn = new Button ("Update");
         updateIncBtn.setOnAction(ActionEvent ->{
-        //Change user income
-        });
+            try{
+                double userInc = Double.parseDouble(updateIncTF.getText());
+                if(userInc > 0){
+                ub1.SetIncome(userInc);
+                userIncLbl.setText("Monthly Net Income: $" + String.format("%,.2f", userInc));
+                updateIncPromptLbl.setText("Income updated");
+                updateIncTF.clear();
+                }
+                else{
+                    updateIncPromptLbl.setText("Please type a positive number, with only 2 decimal places, above.");
+                    updateIncTF.clear();
+                }
+                
+            }
+            catch (Exception e){
+                updateIncPromptLbl.setText("Please type a positive number, with only 2 decimal places, above.");
+                updateIncTF.clear();
+            }
+        }); //Update income button
+        
+        
         Button addEarnBtn = new Button ("Add");
         addEarnBtn.setOnAction(ActionEvent ->{
-        //Add an unexpected earning to user total balance
+        try{
+                double unexEarn = Double.parseDouble(addEarnTF.getText());
+                if(unexEarn > 0){
+                ub1.AddEarn(unexEarn);
+                addEarnPromptLbl.setText("$" + unexEarn + " has been added to your balance.");
+                totUserAccBalLbl.setText("Your total account balance is: $" + String.format("%,.2f", ub1.GetTotal()));
+                addEarnTF.clear();
+                }
+                else{
+                    updateIncPromptLbl.setText("Please type a positive number, with only 2 decimal places, above.");
+                    addEarnTF.clear();
+                }
+                
+            }
+            catch (Exception e){
+                addEarnPromptLbl.setText("Please type a positive number, with only 2 decimal places, above.");
+                addEarnTF.clear();
+            }
+        }); // Add earnings button
+        
+        
+        Button undoEarnBtn = new Button("Undo");
+        undoEarnBtn.setOnAction(ActionEvent ->{
+            if(ub1.GetPrevEarn() != 0){
+            ub1.UndoEarn();
+            addEarnPromptLbl.setText("Previous earnings have been removed from your balance.");
+            totUserAccBalLbl.setText("Your total account balance is: $" + String.format("%,.2f", ub1.GetTotal()));
+            }
+            else{
+            addEarnPromptLbl.setText("Can only undo the last earning. You must reset total balance or add "
+                    +"unwanted earnings to losses on expense page if you wish to remove more.");
+            }
         });
+        
         
         Button expSceneBtn = new Button ("Expenses");
         expSceneBtn.setOnAction(ActionEvent ->{
@@ -129,7 +190,7 @@ public class App extends Application {
         AnchorPane.setTopAnchor(updateBalBtn, 160.0); //Update Balance Btn
         AnchorPane.setLeftAnchor(updateBalBtn, 200.0);
         
-        AnchorPane.setTopAnchor(updateBalPromptLbl, 170.0);//Update Balance prompt Lbl
+        AnchorPane.setTopAnchor(updateBalPromptLbl, 185.0);//Update Balance prompt Lbl
         AnchorPane.setLeftAnchor(updateBalPromptLbl, 40.0);
         
         
@@ -145,7 +206,7 @@ public class App extends Application {
         AnchorPane.setTopAnchor(updateIncBtn,270.0); //User net monthly income Btn
         AnchorPane.setLeftAnchor(updateIncBtn,200.0);
         
-        AnchorPane.setTopAnchor(updateIncPromptLbl,280.0); //User net monthly income prompt Lbl
+        AnchorPane.setTopAnchor(updateIncPromptLbl,295.0); //User net monthly income prompt Lbl
         AnchorPane.setLeftAnchor(updateIncPromptLbl,40.0);
         
         
@@ -158,7 +219,10 @@ public class App extends Application {
         AnchorPane.setTopAnchor(addEarnBtn,350.0); //Add unexpected earnings Btn
         AnchorPane.setLeftAnchor(addEarnBtn,200.0);
         
-        AnchorPane.setTopAnchor(addEarnPromptLbl, 360.0);//Add Earnings prompt Lbl
+        AnchorPane.setTopAnchor(undoEarnBtn,350.0); //Undo last earnings Btn
+        AnchorPane.setLeftAnchor(undoEarnBtn,250.0);
+        
+        AnchorPane.setTopAnchor(addEarnPromptLbl, 375.0);//Add Earnings prompt Lbl
         AnchorPane.setLeftAnchor(addEarnPromptLbl, 40.0);
         
         
@@ -170,8 +234,8 @@ public class App extends Application {
         
         //Show all placements on Account Overview Scene
         hPane.getChildren().addAll(titleLbl, totUserAccBalLbl,updateBalLbl,
-        updateBalTF, updateBalBtn,userIncLbl,
-        updateIncLbl,updateIncTF,updateIncBtn,addEarnLbl,addEarnTF,addEarnBtn,addEarnPromptLbl,
+        updateBalTF, updateBalBtn,updateBalPromptLbl,userIncLbl,
+        updateIncLbl,updateIncTF,updateIncBtn,updateIncPromptLbl,addEarnLbl,addEarnTF,addEarnBtn,undoEarnBtn,addEarnPromptLbl,
         expSceneBtn,calcSceneBtn);
         
         
@@ -202,9 +266,7 @@ public class App extends Application {
         TextField addUnexLossTF = new TextField ();
         
         // Expenses Button Declarations
-        Button addMtlyExpBtn = new Button ("Add Monthly Expense");
         
-        Button removeMtlyExpBtn = new Button ("Remove");
         
         Button addUnexBtn = new Button("Add");
         
@@ -224,22 +286,22 @@ public class App extends Application {
         TableColumn<MtlyExpense,String> typeColumn = 
                 new TableColumn<>("Type");
         typeColumn.setCellValueFactory(
-                new PropertyValueFactory("expType"));
+                new PropertyValueFactory<>("type"));
         
         TableColumn<MtlyExpense,String> nameColumn = 
                 new TableColumn<>("Name");
         nameColumn.setCellValueFactory(
-                new PropertyValueFactory("expName"));
+                new PropertyValueFactory<>("name"));
         
         TableColumn<MtlyExpense,String> costColumn = 
-                new TableColumn<>("Cost");
+                new TableColumn<>("Cost ($)");
         costColumn.setCellValueFactory(
-                new PropertyValueFactory("expCost"));
+                new PropertyValueFactory<>("cost"));
             
         TableColumn<MtlyExpense,String> DDColumn = 
                 new TableColumn<>("Day Due");
         DDColumn.setCellValueFactory(
-                new PropertyValueFactory("dayDue"));
+                new PropertyValueFactory<>("dayDue"));
         
         mtlyExpTV.getColumns().add(typeColumn);
         mtlyExpTV.getColumns().add(nameColumn);
@@ -249,6 +311,37 @@ public class App extends Application {
         // Make Table a resonable size
         mtlyExpTV.setMaxWidth(310);
         mtlyExpTV.setMaxHeight(360);
+        
+        // Monthly Expenses Buttons
+        Button addMtlyExpBtn = new Button ("Add Monthly Expense");
+        addMtlyExpBtn.setOnAction(ActionEvent ->{
+            try{
+                String type = addMtlyTypeTF.getText();
+                String name = addMtlyNameTF.getText();
+                double cost = Double.parseDouble(addMtlyCostTF.getText());
+                int dayDue = Integer.parseInt(addMtlyDDTF.getText());
+                
+                if(cost > 0 && dayDue > 0 && dayDue < 32 ){
+                    mtlyExpTV.getItems().add(new MtlyExpense(type,name,cost,dayDue));
+                    addMtlyExpPromptLbl.setText("Expense added.");
+                    
+                    addMtlyTypeTF.clear();
+                    addMtlyNameTF.clear();
+                    addMtlyCostTF.clear();
+                    addMtlyDDTF.clear();
+                    
+                }
+                else{
+                    addMtlyExpPromptLbl.setText("Please type a positive cost and a day between 0 and 32");
+                }
+    
+            }
+            catch(Exception e){
+                addMtlyExpPromptLbl.setText("Something was not typed correctly...");
+            }
+        });
+        
+        Button removeMtlyExpBtn = new Button ("Remove");
         
         
         
@@ -308,7 +401,7 @@ public class App extends Application {
         AnchorPane.setTopAnchor(mtlyExpLbl, 40.0); //Add Monthly Expense Table Title Lbl
         AnchorPane.setRightAnchor(mtlyExpLbl, 250.0);
         
-        AnchorPane.setTopAnchor(addMtlyExpPromptLbl, 30.0); //Add Monthly Expense Table Prompt Lbl
+        AnchorPane.setTopAnchor(addMtlyExpPromptLbl, 15.0); //Add Monthly Expense Table Prompt Lbl
         AnchorPane.setRightAnchor(addMtlyExpPromptLbl, 250.0);
         
         AnchorPane.setBottomAnchor(removeMtlyExpBtn, 70.0); //Add Monthly Expense Remove Btn
