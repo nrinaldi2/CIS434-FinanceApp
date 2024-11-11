@@ -1,5 +1,5 @@
 com\finance\financefx\MtlyExpense.class
-com\finance\financefx\SystemInfo.class
 com\finance\financefx\UserBalance.class
 module-info.class
 com\finance\financefx\App.class
+com\finance\SystemInfo.class

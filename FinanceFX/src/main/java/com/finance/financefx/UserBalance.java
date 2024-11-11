@@ -18,6 +18,12 @@ public class UserBalance {
        return this.mtlyIncome;
    } //Get net monthly income
    
+   public double GetIncAfExp(double totMtlyExp){
+       double incBfExp = this.mtlyIncome;
+       
+       return incBfExp - totMtlyExp;
+   }
+   
    public double GetPrevEarn (){
        return this.previousEarn;
    }
@@ -38,9 +44,14 @@ public class UserBalance {
        this.previousEarn = 0;
    } //Undo the last add earnings operation
    
-   public void SetIncome(double userInc){
-       this.mtlyIncome = userInc;
-   } //Set monthly income (after income tax)
+   public void AddExp (double unexExp){
+       this.currentTotal -= unexExp;
+   } //Subtract unexpected expense from total balance
+   
+   public void SetIncome(double userInc) {
+	    this.mtlyIncome = userInc;
+	    System.out.println("Income set to: " + mtlyIncome); // Debugging print statement
+	} //Set monthly income (after income tax)
    
    
    

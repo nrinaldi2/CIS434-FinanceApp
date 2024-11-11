@@ -1,8 +1,12 @@
 package com.finance.financefx;
 
+
 import java.util.HashSet;
 import javafx.application.Application;
 import javafx.scene.Scene;
+import javafx.scene.chart.LineChart;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
@@ -13,6 +17,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
@@ -23,7 +28,14 @@ import javafx.stage.Stage;
  */
 
 public class App extends Application {
-
+        //********************************
+	private double newMonthlyEarn;
+	private double monthlySavings;
+	private int savedMonths;
+	private double savedwithinterest; 
+        //******* GAVIN ******************
+        
+        
     @Override
     public void start(Stage stage) {
         //          HOME Scene
@@ -43,6 +55,50 @@ public class App extends Application {
         stage.setScene(hScene);
         stage.show();
         
+        // User balance object (Temporary user account)
+        UserBalance ub1 = new UserBalance();
+        
+        
+        // Table View Declaration and Definition for Monthly Expenses
+        
+        TableView<MtlyExpense> mtlyExpTV = new TableView();
+        
+        // Add Columns
+        TableColumn<MtlyExpense,String> typeColumn = 
+                new TableColumn<>("Type");
+        typeColumn.setCellValueFactory(
+                new PropertyValueFactory<>("type"));
+        
+        TableColumn<MtlyExpense,String> nameColumn = 
+                new TableColumn<>("Name");
+        nameColumn.setCellValueFactory(
+                new PropertyValueFactory<>("name"));
+        
+        TableColumn<MtlyExpense,String> costColumn = 
+                new TableColumn<>("Cost ($)");
+        costColumn.setCellValueFactory(
+                new PropertyValueFactory<>("cost"));
+            
+        TableColumn<MtlyExpense,String> DDColumn = 
+                new TableColumn<>("Day Due");
+        DDColumn.setCellValueFactory(
+                new PropertyValueFactory<>("dayDue"));
+        
+        mtlyExpTV.getColumns().add(typeColumn);
+        mtlyExpTV.getColumns().add(nameColumn);
+        mtlyExpTV.getColumns().add(costColumn);
+        mtlyExpTV.getColumns().add(DDColumn);
+        
+        // Make Table a resonable size
+        mtlyExpTV.setMaxWidth(310);
+        mtlyExpTV.setMaxHeight(360);
+        
+        
+        // Calculations page net income label
+        Label netMtlyIncLbl = new Label("Net monthly income after expenses: $" + String.format("%,.2f", ub1.GetIncAfExp(mtlyExpTV.getItems().stream().mapToDouble(MtlyExpense::getCost).sum())));
+        
+        
+        
         
 //          ACCOUNT OVERVIEW SCENE
 
@@ -51,7 +107,6 @@ public class App extends Application {
         titleLbl.getStyleClass().add("titleLbl");
         titleLbl.setFont(Font.font("cursive"));
         
-        UserBalance ub1 = new UserBalance();
         
         // Account Overview Label Declarations
         Label totUserAccBalLbl = new Label("Your total account balance is: $" + ub1.GetTotal());
@@ -107,10 +162,12 @@ public class App extends Application {
             try{
                 double userInc = Double.parseDouble(updateIncTF.getText());
                 if(userInc > 0){
+               
                 ub1.SetIncome(userInc);
                 userIncLbl.setText("Monthly Net Income: $" + String.format("%,.2f", userInc));
                 updateIncPromptLbl.setText("Income updated");
                 updateIncTF.clear();
+                System.out.println(userInc);
                 }
                 else{
                     updateIncPromptLbl.setText("Please type a positive number, with only 2 decimal places, above.");
@@ -136,7 +193,7 @@ public class App extends Application {
                 addEarnTF.clear();
                 }
                 else{
-                    updateIncPromptLbl.setText("Please type a positive number, with only 2 decimal places, above.");
+                    addEarnPromptLbl.setText("Please type a positive number, with only 2 decimal places, above.");
                     addEarnTF.clear();
                 }
                 
@@ -159,16 +216,37 @@ public class App extends Application {
             addEarnPromptLbl.setText("Can only undo the last earning. You must reset total balance or add "
                     +"unwanted earnings to losses on expense page if you wish to remove more.");
             }
-        });
+        }); // Undo last unexpected earning
         
         
         Button expSceneBtn = new Button ("Expenses");
         expSceneBtn.setOnAction(ActionEvent ->{
-        stage.setScene(expensesScene);
+            // Clear all fields & prompts
+            updateBalTF.clear();
+            updateIncTF.clear();
+            addEarnTF.clear();
+            updateBalPromptLbl.setText(" ");
+            updateIncPromptLbl.setText(" ");
+            addEarnPromptLbl.setText(" ");
+         
+            
+            stage.setScene(expensesScene);
         }); //Go to expenses page
         
         Button calcSceneBtn = new Button ("Calculations");
         calcSceneBtn.setOnAction(ActionEvent ->{
+            // Clear all fields & prompts
+            updateBalTF.clear();
+            updateIncTF.clear();
+            addEarnTF.clear();
+            updateBalPromptLbl.setText(" ");
+            updateIncPromptLbl.setText(" ");
+            addEarnPromptLbl.setText(" "); 
+            
+        // Update net income on calc page if there is a new monthly income or monthly expense
+        netMtlyIncLbl.setText("Net monthly income after expenses: $" + String.format("%,.2f", ub1.GetIncAfExp(mtlyExpTV.getItems().stream().mapToDouble(MtlyExpense::getCost).sum())));
+        
+        
         stage.setScene(calculationsScene);
         }); //Go to calculations page
         
@@ -222,7 +300,7 @@ public class App extends Application {
         AnchorPane.setTopAnchor(undoEarnBtn,350.0); //Undo last earnings Btn
         AnchorPane.setLeftAnchor(undoEarnBtn,250.0);
         
-        AnchorPane.setTopAnchor(addEarnPromptLbl, 375.0);//Add Earnings prompt Lbl
+        AnchorPane.setTopAnchor(addEarnPromptLbl, 380.0);//Add Earnings prompt Lbl
         AnchorPane.setLeftAnchor(addEarnPromptLbl, 40.0);
         
         
@@ -242,7 +320,8 @@ public class App extends Application {
         
         
 //          EXPENSES SCENE
-        
+       
+   
         // Expenses Label Declarations
         Label expensesLbl = new Label("Expenses");
         Label addMtlyExpLbl = new Label("Add Monthly Expense");
@@ -258,6 +337,10 @@ public class App extends Application {
         Label addMtlyExpPromptLbl = new Label (" ");
         Label addUnexExpPromptLbl = new Label (" ");
         
+        // Expenses Label formatting
+        addUnexExpPromptLbl.setWrapText(true);
+        addUnexExpPromptLbl.setMaxWidth(270);
+        
         // Expenses Text Field Declarations
         TextField addMtlyTypeTF = new TextField();
         TextField addMtlyNameTF = new TextField();
@@ -265,52 +348,76 @@ public class App extends Application {
         TextField addMtlyDDTF = new TextField();
         TextField addUnexLossTF = new TextField ();
         
+        
+        // Developing calendar to see each expense? (Nick)
+        
         // Expenses Button Declarations
         
+        // Calendar button declaration and action (Gavin)
+        Button calendarBtn = new Button("Calendar");
+        calendarBtn.setOnAction(e -> {
+            System.out.println("Calendar button clicked");
+            // Add functionality to open calendar, if needed
+        });
         
+        calendarBtn.setLayoutX(10); // X position near the left edge
+        calendarBtn.setLayoutY(10); // Y position near the top edge
+
+   
         Button addUnexBtn = new Button("Add");
+        addUnexBtn.setOnAction(ActionEvent ->{
+            try {
+                double unexCost = Double.parseDouble(addUnexLossTF.getText());
+                double unexCostNeg = -unexCost;
+                
+                if(unexCost > 0){
+                ub1.AddExp(unexCost); // Subtract unexpected expense from total
+                
+                addUnexExpPromptLbl.setText("$" + String.format("%,.2f", unexCost) + " has been subtracted from your balance. Your balance is now $" + ub1.GetTotal());
+                
+                addUnexLossTF.clear(); // Clear text field
+                }
+                else if (unexCost < 0){
+                ub1.AddExp(unexCostNeg); // Subtract unexpected expense from total
+                
+                addUnexExpPromptLbl.setText("$" + String.format("%,.2f", unexCostNeg) + " has been subtracted from your balance. Your balance is now $" + ub1.GetTotal());
+                
+                addUnexLossTF.clear(); // Clear text field
+                }
+                else{
+                    addUnexExpPromptLbl.setText("Please enter a nonzero number above...");
+                    addUnexLossTF.clear(); // Clear text field
+                }
+            }
+            catch(Exception e){
+                    addUnexExpPromptLbl.setText("Please enter a nonzero number above...");
+                    addUnexLossTF.clear(); // Clear text field
+            }
+            
+        });
         
+
         Button backBtn = new Button ("Back");
         backBtn.setOnAction(ActionEvent ->{
         //Clear textfields
+        addMtlyTypeTF.clear();
+        addMtlyNameTF.clear();
+        addMtlyCostTF.clear();
+        addMtlyDDTF.clear();
+        addUnexLossTF.clear();
+        
+        addMtlyExpPromptLbl.setText(" ");
+        addUnexExpPromptLbl.setText(" ");
+        
+        totUserAccBalLbl.setText("Your total account balance is: $" + String.format("%,.2f", ub1.GetTotal())); // Refresh balance label
+        userIncLbl.setText("Monthly Net Income: $" + String.format("%,.2f", ub1.GetInc())); // Refresh income label
+        
         stage.setScene(hScene);
-        });
+        }); // Returns to Account Overview scene from Expenses scene
         
         
         
-        // Table View Declaration and Definition for Monthly Expenses
         
-        TableView mtlyExpTV = new TableView();
-        
-        // Add Columns
-        TableColumn<MtlyExpense,String> typeColumn = 
-                new TableColumn<>("Type");
-        typeColumn.setCellValueFactory(
-                new PropertyValueFactory<>("type"));
-        
-        TableColumn<MtlyExpense,String> nameColumn = 
-                new TableColumn<>("Name");
-        nameColumn.setCellValueFactory(
-                new PropertyValueFactory<>("name"));
-        
-        TableColumn<MtlyExpense,String> costColumn = 
-                new TableColumn<>("Cost ($)");
-        costColumn.setCellValueFactory(
-                new PropertyValueFactory<>("cost"));
-            
-        TableColumn<MtlyExpense,String> DDColumn = 
-                new TableColumn<>("Day Due");
-        DDColumn.setCellValueFactory(
-                new PropertyValueFactory<>("dayDue"));
-        
-        mtlyExpTV.getColumns().add(typeColumn);
-        mtlyExpTV.getColumns().add(nameColumn);
-        mtlyExpTV.getColumns().add(costColumn);
-        mtlyExpTV.getColumns().add(DDColumn);
-        
-        // Make Table a resonable size
-        mtlyExpTV.setMaxWidth(310);
-        mtlyExpTV.setMaxHeight(360);
         
         // Monthly Expenses Buttons
         Button addMtlyExpBtn = new Button ("Add Monthly Expense");
@@ -330,6 +437,7 @@ public class App extends Application {
                     addMtlyCostTF.clear();
                     addMtlyDDTF.clear();
                     
+                    totMtlyExpLbl.setText("Monthly Expenses Total: $" + String.format("%,.2f", mtlyExpTV.getItems().stream().mapToDouble(MtlyExpense::getCost).sum())); // Update total Lbl
                 }
                 else{
                     addMtlyExpPromptLbl.setText("Please type a positive cost and a day between 0 and 32");
@@ -342,7 +450,16 @@ public class App extends Application {
         });
         
         Button removeMtlyExpBtn = new Button ("Remove");
+        removeMtlyExpBtn.setOnAction(ActionEvent ->{
+            mtlyExpTV.getItems().remove(mtlyExpTV.getSelectionModel().getSelectedItem());
+            mtlyExpTV.getSelectionModel().clearSelection();
+            
+            totMtlyExpLbl.setText("Monthly Expenses Total: $" + String.format("%,.2f", mtlyExpTV.getItems().stream().mapToDouble(MtlyExpense::getCost).sum())); // Update total Lbl
+        }); // Remove an expense from the table
         
+        
+        // Total Monthly Expenses Calculation and insertion below table
+        totMtlyExpLbl.setText("Monthly Expenses Total: $" + String.format("%,.2f", mtlyExpTV.getItems().stream().mapToDouble(MtlyExpense::getCost).sum()));
         
         
         // Expenses page placements
@@ -353,12 +470,13 @@ public class App extends Application {
         AnchorPane.setTopAnchor(addMtlyExpLbl, 80.0); //Add Monthly Expense Lbl
         AnchorPane.setLeftAnchor(addMtlyExpLbl, 20.0);
         
+        
         AnchorPane.setTopAnchor(addMtlyTypeLbl, 110.0); //Add Monthly Type Lbl
         AnchorPane.setLeftAnchor(addMtlyTypeLbl, 20.0);
         
         AnchorPane.setTopAnchor(addMtlyTypeTF, 130.0); //Add Monthly Type TF
         AnchorPane.setLeftAnchor(addMtlyTypeTF, 20.0);
-        
+ 
         
         AnchorPane.setTopAnchor(addMtlyNameLbl, 160.0); //Add Monthly Name Lbl
         AnchorPane.setLeftAnchor(addMtlyNameLbl, 20.0);
@@ -394,6 +512,9 @@ public class App extends Application {
         AnchorPane.setTopAnchor(addUnexBtn, 390.0); //Add Unexpected Loss Btn
         AnchorPane.setLeftAnchor(addUnexBtn, 180.0);
         
+        AnchorPane.setTopAnchor(addUnexExpPromptLbl, 420.0); //Add Unexpected Loss Prompt Lbl
+        AnchorPane.setLeftAnchor(addUnexExpPromptLbl, 20.0);
+        
         
         AnchorPane.setTopAnchor(mtlyExpTV, 60.0); //Add Monthly Expense Table View
         AnchorPane.setRightAnchor(mtlyExpTV, 15.0);
@@ -402,13 +523,13 @@ public class App extends Application {
         AnchorPane.setRightAnchor(mtlyExpLbl, 250.0);
         
         AnchorPane.setTopAnchor(addMtlyExpPromptLbl, 15.0); //Add Monthly Expense Table Prompt Lbl
-        AnchorPane.setRightAnchor(addMtlyExpPromptLbl, 250.0);
+        AnchorPane.setLeftAnchor(addMtlyExpPromptLbl, 395.0);
         
         AnchorPane.setBottomAnchor(removeMtlyExpBtn, 70.0); //Add Monthly Expense Remove Btn
         AnchorPane.setRightAnchor(removeMtlyExpBtn, 265.0);
         
         AnchorPane.setBottomAnchor(totMtlyExpLbl, 75.0); //Add Monthly Expense Table Total Lbl
-        AnchorPane.setRightAnchor(totMtlyExpLbl, 85.0);
+        AnchorPane.setLeftAnchor(totMtlyExpLbl, 490.0);
         
         AnchorPane.setBottomAnchor(backBtn, 20.0); //Add Back Btn
         AnchorPane.setRightAnchor(backBtn, 40.0);
@@ -428,30 +549,124 @@ public class App extends Application {
         
         // Calulation Labels
         Label calcLbl = new Label("Calculations");
-        Label netMtlyIncLbl = new Label("Net monthly income after expenses: $");
         Label netAfSavLbl = new Label("Calculate net monthly income after desired savings");
-        Label pSavedLbl = new Label("Percent of earnings saved (monthly): ");
+        Label pSavedLbl = new Label("Percent of income saved (monthly): ");
         Label pLbl = new Label ("%"); // Meant to be put next to respective text field
-        Label pSaved2Lbl = new Label("Percent of earnings saved: " + "%"); // NOTE: This is fully set once first pSaved is entered
+        Label pSaved2Lbl = new Label("Percent of income saved: " + "%"); // NOTE: This is fully set once first pSaved is entered
         Label calcFBalLbl = new Label("Calculate future balance");
         Label calcFBMonthsLbl = new Label("Months: ");
         
         // Calculation Info Prompt Labels
-        Label netASPromptLbl = new Label(" ");
-        Label calcFBPromptLbl = new Label(" ");
+        Label netASPromptLbl = new Label(" "); // after savings calculation 
+        Label calcFBPromptLbl = new Label(" "); // after future balance calculation
         
         // Calculation Text Fields
+        //months and percent of monthly earnings
         TextField pSavedTF = new TextField("");
         TextField calcFBMonthsTF = new TextField("");
-        
+
         // Calculation Button Declarations and Actions
         Button netAfSavBtn = new Button("Calculate");
         Button calcFbBtn = new Button("Calculate");
+        
         Button backBtn2 = new Button("Back");
         backBtn2.setOnAction(ActionEvent ->{
-        //Clear textfields
+        pSavedTF.clear(); // Clear text field  
+        netASPromptLbl.setText(" "); // Clear prompt
+        calcFBMonthsTF.clear(); // Clear text field
+        calcFBPromptLbl.setText(" "); // Clear Prompt
+        
+        totUserAccBalLbl.setText("Your total account balance is: $" + String.format("%,.2f", ub1.GetTotal())); // Refresh balance label
+        userIncLbl.setText("Monthly Net Income: $" + String.format("%,.2f", ub1.GetInc())); // Refresh income label
+        
         stage.setScene(hScene);
+        }); // Return to Account Overview Scene from Calculations scene
+        
+        
+        // Back button declaration & action for savings accrued vs. months graph
+        Button backBtn3 = new Button("Back");
+        backBtn3.setOnAction(ActionEvent ->{
+        stage.setScene(calculationsScene);
+        }); // Return to Calculations scene from graph
+        
+        backBtn3.setTranslateX(20.0); // Move back button right 20 pixels
+        backBtn3.setTranslateY(40.0); // Move back button down 20 pixels
+        
+        Button sVsMtsGraphBtn = new Button("Graph Savings vs. Months");
+        
+        //Start display of the savings accrued vs. months graph which shows months on the x axis and shows total savings on the y axis
+        sVsMtsGraphBtn.setOnAction(event -> {
+            pSavedTF.clear(); // Clear text field
+            netASPromptLbl.setText(" "); // Clear prompt
+            calcFBMonthsTF.clear(); // Clear text field
+            calcFBPromptLbl.setText(" "); // Clear Prompt
+            
+            
+        	LineChart<Number, Number> lineChart = createSavingsGraph(); // Create graph
+            VBox graphLayout = new VBox(10, lineChart, backBtn3); // Add graph and back button in a VBox
+            stage.setScene(new Scene(graphLayout, 600, 500)); // Change scene to graph display
+        	
         });
+        
+        
+        Button InvestedFunds = new Button("Project savings if invested in S&P500");
+        
+//Calculations for providing income based on the saved percent by the user -Gavin Wells
+//Printing out currently just in System. Need Nick to make a text field to print out the projected income post savings
+        netAfSavBtn.setOnAction(event -> {
+            try {
+            double savedPC = Double.parseDouble(pSavedTF.getText()); // (NICK) Adjusted to parse for double (in case user wants decimal percentage)
+            pSaved2Lbl.setText("Percent of income saved: " + savedPC + "%");
+            
+            System.out.println("Retrieved income for calculation: " + ub1.GetInc());                                                                          
+            newMonthlyEarn = ub1.GetIncAfExp(mtlyExpTV.getItems().stream().mapToDouble(MtlyExpense::getCost).sum()) - (ub1.GetIncAfExp(mtlyExpTV.getItems().stream().mapToDouble(MtlyExpense::getCost).sum()) * (savedPC / 100.0)); // Store the result in the class-level variable
+            monthlySavings = ub1.GetIncAfExp(mtlyExpTV.getItems().stream().mapToDouble(MtlyExpense::getCost).sum()) * (savedPC / 100.0);             //(NICK) Swapped local variable for direct income retrieval from 
+                                                                                //       ub1 object
+            netASPromptLbl.setText("New monthly earnings after savings: $" + String.format("%,.2f", newMonthlyEarn)); // (NICK) Savings text is now sent to prompt for it
+            
+            pSavedTF.clear(); // Clear text field           
+            } 
+            catch (NumberFormatException e) {
+                System.out.println("Invalid input: " + e.getMessage()); //(NICK) Rearranged catch so that any errors caught during calc attempt are output
+            pSavedTF.clear(); // Clear text field 
+            }
+            
+        });
+        //End of Calculation for percent of saved monthly income
+        
+        
+        //Start of Calculation for Total Saved amount after modified income 
+        // (NICK) My original intention for this calculation was to show what the user's 
+        //        balance would be in x amount of months after saving whatever percentage 
+        //        they entered of their paycheck per month.
+        calcFbBtn.setOnAction(event -> {
+        	 try {
+                 savedMonths = Integer.parseInt(calcFBMonthsTF.getText());
+        	 double totalAFSav = ub1.GetTotal()+(savedMonths * monthlySavings);
+        	 calcFBPromptLbl.setText("Your balance will be around $" + String.format("%,.2f",totalAFSav) + " in " + savedMonths + " months.");
+                 
+                 calcFBMonthsTF.clear(); // Clear text field
+                 } 
+                 catch (NumberFormatException e) {
+                 System.out.println("Invalid input: " + e.getMessage());
+                 calcFBMonthsTF.clear(); // Clear text field
+                 }
+        });
+        
+        
+        
+        //Displays what the total compounded worth of the savings could be at the end of the set term in months if invested in the S&P500 index assuming 8% annual return
+        //8% Per year also averages 0.67% return on investment per month as the set rate
+        InvestedFunds.setOnAction(event -> {
+        	savedwithinterest = monthlySavings;
+        for(int i = 0; i <= savedMonths; i++) {
+        	
+        	savedwithinterest *= 1.0067;
+        	savedwithinterest += monthlySavings;
+        }
+        System.out.println("This is the worth of your savings if invested throughout that entire time: $" + String.format("%,.2f", savedwithinterest));
+        });
+        
         
         
         
@@ -479,7 +694,7 @@ public class App extends Application {
         AnchorPane.setTopAnchor(netAfSavBtn, 180.0); // Net Monthly Income Calculation Btn
         AnchorPane.setLeftAnchor(netAfSavBtn, 220.0);
         
-        AnchorPane.setTopAnchor(netASPromptLbl, 200.0); // Net Monthly Income After Savings Prompt Lbl
+        AnchorPane.setTopAnchor(netASPromptLbl, 210.0); // Net Monthly Income After Savings Prompt Lbl
         AnchorPane.setLeftAnchor(netASPromptLbl, 40.0);
         
         
@@ -498,23 +713,50 @@ public class App extends Application {
         AnchorPane.setTopAnchor(calcFbBtn,350.0); // Calculate Future Balance Months Btn
         AnchorPane.setLeftAnchor(calcFbBtn, 40.0);
         
-        AnchorPane.setTopAnchor(calcFBPromptLbl, 370.0); // Calculate Future Balance Prompt Lbl
+        AnchorPane.setTopAnchor(calcFBPromptLbl, 380.0); // Calculate Future Balance Prompt Lbl
         AnchorPane.setLeftAnchor(calcFBPromptLbl, 40.0);
         
         
         AnchorPane.setBottomAnchor(backBtn2, 20.0); // Back Btn
         AnchorPane.setLeftAnchor(backBtn2, 40.0);
         
+        AnchorPane.setBottomAnchor(sVsMtsGraphBtn,350.0); 
+        AnchorPane.setLeftAnchor(sVsMtsGraphBtn, 400.0);
         
+        AnchorPane.setBottomAnchor(InvestedFunds, 310.0);
+        AnchorPane.setLeftAnchor(InvestedFunds, 400.0);
         
         calculationsPane.getChildren().addAll(calcLbl,netMtlyIncLbl,
                 netAfSavLbl,pSavedLbl,pLbl,pSaved2Lbl,
                 calcFBalLbl,calcFBMonthsLbl,netASPromptLbl,
                 calcFBPromptLbl,pSavedTF,calcFBMonthsTF,
-                netAfSavBtn,calcFbBtn, backBtn2);
+                netAfSavBtn,calcFbBtn, backBtn2, sVsMtsGraphBtn, InvestedFunds);
         
     }
+ // Create the graph based on total savings per month
+    private LineChart<Number, Number> createSavingsGraph() {
+        // X and Y axes for the graph
+        NumberAxis xAxis = new NumberAxis();
+        xAxis.setLabel("Months");
 
+        NumberAxis yAxis = new NumberAxis();
+        yAxis.setLabel("Total Saved ($)");
+
+        // Create the LineChart with axes
+        LineChart<Number, Number> lineChart = new LineChart<>(xAxis, yAxis);
+        XYChart.Series<Number, Number> series = new XYChart.Series<>();
+        series.setName("Total Saved Over Time");
+
+        // Calculate and plot the data points for each month
+        for (int month = 0; month <= savedMonths; month++) {
+            double totalSaved = month * monthlySavings; // Total savings by the end of the month
+            series.getData().add(new XYChart.Data<>(month, totalSaved)); // Add data to series
+        }
+
+        lineChart.getData().add(series); // Add the series to the chart
+        return lineChart; // Return the chart to be displayed
+    }
+    
     public static void main(String[] args) {
         launch();
     }

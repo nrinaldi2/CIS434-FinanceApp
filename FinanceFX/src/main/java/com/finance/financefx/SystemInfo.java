@@ -1,4 +1,4 @@
-package com.finance.financefx;
+package com.finance;
 
 public class SystemInfo {
 
