@@ -39,5 +39,8 @@ public class MtlyExpense {
         return dayDue;
     }
 
+    public String toCSV() {
+            return String.join(",", getType(), getName(), String.valueOf(getCost()), String.valueOf(getDayDue()));
+        }
     
 }

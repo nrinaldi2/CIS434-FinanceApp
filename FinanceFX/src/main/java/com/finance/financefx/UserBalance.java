@@ -2,9 +2,10 @@
 package com.finance.financefx;
 
 
-public class UserBalance {
-   private double currentTotal;
-   private double mtlyIncome;
+public class UserBalance{
+    
+   private double currentTotal = 0;
+   private double mtlyIncome = 0;
    private double previousEarn;
    
     
@@ -52,7 +53,6 @@ public class UserBalance {
 	    this.mtlyIncome = userInc;
 	    System.out.println("Income set to: " + mtlyIncome); // Debugging print statement
 	} //Set monthly income (after income tax)
-   
    
    
    

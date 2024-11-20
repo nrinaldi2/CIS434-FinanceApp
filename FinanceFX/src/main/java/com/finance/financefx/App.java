@@ -1,15 +1,23 @@
 package com.finance.financefx;
 
-
+import java.util.stream.Collectors;
+import java.io.FileWriter;
+import java.io.BufferedWriter;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.HashSet;
 import javafx.application.Application;
 import javafx.scene.Scene;
-import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.LineChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListView;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -31,7 +39,7 @@ public class App extends Application {
         //********************************
 	private double newMonthlyEarn;
 	private double monthlySavings;
-	private int savedMonths;
+	private double savedMonths;
 	private double savedwithinterest; 
         //******* GAVIN ******************
         
@@ -55,8 +63,36 @@ public class App extends Application {
         stage.setScene(hScene);
         stage.show();
         
-        // User balance object (Temporary user account)
+        
+        // Declare Load and Save objects for single User
+        LoadUser LDub1Bal = new LoadUser("UserBal.txt");
+        LoadUser LDub1Inc = new LoadUser("UserInc.txt");
+        SaveUser SVub1 = new SaveUser();
+        
+        
+        // User balance object (Single User Account)
         UserBalance ub1 = new UserBalance();
+        
+        
+        // Load previous balance and income if present
+        
+        // Load Balance
+        try{
+        ub1.SetTotal(LDub1Bal.readDouble()); 
+        }
+        catch(IOException | NumberFormatException e){
+            System.err.println("Error: " + e.getMessage());
+        }
+        
+        // Load Income
+        try{
+        ub1.SetIncome(LDub1Inc.readDouble());
+        }
+        catch(IOException | NumberFormatException e){
+            System.err.println("Error: " + e.getMessage());
+        }
+        
+        
         
         
         // Table View Declaration and Definition for Monthly Expenses
@@ -98,6 +134,30 @@ public class App extends Application {
         Label netMtlyIncLbl = new Label("Net monthly income after expenses: $" + String.format("%,.2f", ub1.GetIncAfExp(mtlyExpTV.getItems().stream().mapToDouble(MtlyExpense::getCost).sum())));
         
         
+        // Load mtlyExpTV with values from file
+        try{
+              File f = new File("expenses.csv");
+              FileReader fr = new FileReader(f);
+              BufferedReader file = new BufferedReader(fr);
+              
+              String line;
+              while((line = file.readLine()) != null){
+                  String[] parts = line.split(",");
+                  String type = parts[0];
+                  String name = parts[1];
+                  double cost = Double.parseDouble(parts[2]);
+                  int dayDue = Integer.parseInt(parts[3]);
+                  
+                  mtlyExpTV.getItems().add(new MtlyExpense(type, name, cost,dayDue));
+              }
+              file.close();
+          }
+          catch(FileNotFoundException ex){
+              System.out.println("File not found!");
+          }
+          catch(IOException ex){
+              System.out.println("Problem with file!");
+          }
         
         
 //          ACCOUNT OVERVIEW SCENE
@@ -109,9 +169,9 @@ public class App extends Application {
         
         
         // Account Overview Label Declarations
-        Label totUserAccBalLbl = new Label("Your total account balance is: $" + ub1.GetTotal());
+        Label totUserAccBalLbl = new Label("Your total account balance is: $" + String.format("%,.2f", ub1.GetTotal()));
         Label updateBalLbl = new Label("Update Account Balance (All checking and cash): ");
-        Label userIncLbl = new Label ("Monthly Net Income: $" + ub1.GetInc());
+        Label userIncLbl = new Label ("Monthly Net Income: $" + String.format("%,.2f", ub1.GetInc()));
         Label updateIncLbl = new Label ("Update Monthly Income (After taxes): ");
         Label addEarnLbl = new Label ("Add unexpected earnings: ");
         
@@ -144,15 +204,16 @@ public class App extends Application {
                 totUserAccBalLbl.setText("Your total account balance is: $" + String.format("%,.2f", userBal));
                 updateBalTF.clear();
                 updateBalPromptLbl.setText(" ");
+                SVub1.saveBal("UserBal.txt", userBal);
                 }
                 else{
-                    updateBalPromptLbl.setText("Please type a positive number, with only 2 decimal places, above.");
+                    updateBalPromptLbl.setText("Please type a positive number greater than zero above.");
                     updateBalTF.clear();
                 }
                 
             }
             catch (Exception e){
-                updateBalPromptLbl.setText("Please type a positive number, with only 2 decimal places, above.");
+                updateBalPromptLbl.setText("Please type a positive number greater than zero above.");
                 updateBalTF.clear();
             } 
         }); //Update balance button
@@ -167,16 +228,16 @@ public class App extends Application {
                 userIncLbl.setText("Monthly Net Income: $" + String.format("%,.2f", userInc));
                 updateIncPromptLbl.setText("Income updated");
                 updateIncTF.clear();
-                System.out.println(userInc);
+                SVub1.saveInc("UserInc.txt", userInc);
                 }
                 else{
-                    updateIncPromptLbl.setText("Please type a positive number, with only 2 decimal places, above.");
+                    updateIncPromptLbl.setText("Please type a positive number greater than zero above.");
                     updateIncTF.clear();
                 }
                 
             }
             catch (Exception e){
-                updateIncPromptLbl.setText("Please type a positive number, with only 2 decimal places, above.");
+                updateIncPromptLbl.setText("Please type a positive number greater than zero above.");
                 updateIncTF.clear();
             }
         }); //Update income button
@@ -191,15 +252,16 @@ public class App extends Application {
                 addEarnPromptLbl.setText("$" + unexEarn + " has been added to your balance.");
                 totUserAccBalLbl.setText("Your total account balance is: $" + String.format("%,.2f", ub1.GetTotal()));
                 addEarnTF.clear();
+                SVub1.saveBal("UserBal.txt", ub1.GetTotal());
                 }
                 else{
-                    addEarnPromptLbl.setText("Please type a positive number, with only 2 decimal places, above.");
+                    addEarnPromptLbl.setText("Please type a positive number greater than zero above.");
                     addEarnTF.clear();
                 }
                 
             }
             catch (Exception e){
-                addEarnPromptLbl.setText("Please type a positive number, with only 2 decimal places, above.");
+                addEarnPromptLbl.setText("Please type a positive number greater than zero above.");
                 addEarnTF.clear();
             }
         }); // Add earnings button
@@ -211,6 +273,7 @@ public class App extends Application {
             ub1.UndoEarn();
             addEarnPromptLbl.setText("Previous earnings have been removed from your balance.");
             totUserAccBalLbl.setText("Your total account balance is: $" + String.format("%,.2f", ub1.GetTotal()));
+            SVub1.saveBal("UserBal.txt", ub1.GetTotal());
             }
             else{
             addEarnPromptLbl.setText("Can only undo the last earning. You must reset total balance or add "
@@ -368,21 +431,20 @@ public class App extends Application {
         addUnexBtn.setOnAction(ActionEvent ->{
             try {
                 double unexCost = Double.parseDouble(addUnexLossTF.getText());
-                double unexCostNeg = -unexCost;
                 
                 if(unexCost > 0){
                 ub1.AddExp(unexCost); // Subtract unexpected expense from total
-                
-                addUnexExpPromptLbl.setText("$" + String.format("%,.2f", unexCost) + " has been subtracted from your balance. Your balance is now $" + ub1.GetTotal());
-                
+                addUnexExpPromptLbl.setText("$" + String.format("%,.2f", unexCost) + " has been subtracted from your balance. Your balance is now $" + String.format("%,.2f",ub1.GetTotal()));
                 addUnexLossTF.clear(); // Clear text field
+                
+                SVub1.saveBal("UserBal.txt", ub1.GetTotal()); // Update balance file
                 }
                 else if (unexCost < 0){
-                ub1.AddExp(unexCostNeg); // Subtract unexpected expense from total
-                
-                addUnexExpPromptLbl.setText("$" + String.format("%,.2f", unexCostNeg) + " has been subtracted from your balance. Your balance is now $" + ub1.GetTotal());
-                
+                ub1.AddExp(-unexCost); // Subtract unexpected expense from total
+                addUnexExpPromptLbl.setText("$" + String.format("%,.2f", -unexCost) + " has been subtracted from your balance. Your balance is now $" + String.format("%,.2f",ub1.GetTotal()));
                 addUnexLossTF.clear(); // Clear text field
+                
+                SVub1.saveBal("UserBal.txt", ub1.GetTotal()); // Update balance file
                 }
                 else{
                     addUnexExpPromptLbl.setText("Please enter a nonzero number above...");
@@ -428,9 +490,42 @@ public class App extends Application {
                 double cost = Double.parseDouble(addMtlyCostTF.getText());
                 int dayDue = Integer.parseInt(addMtlyDDTF.getText());
                 
-                if(cost > 0 && dayDue > 0 && dayDue < 32 ){
+                
+                if(name.isEmpty()){
+                    addMtlyExpPromptLbl.setText("You must at least provide a name to the expense.");
+                }
+                else if(cost > 0 && dayDue > 0 && dayDue < 32 ){
                     mtlyExpTV.getItems().add(new MtlyExpense(type,name,cost,dayDue));
                     addMtlyExpPromptLbl.setText("Expense added.");
+                    
+                    try (BufferedWriter writer = new BufferedWriter(new FileWriter("expenses.csv", true))) {
+                    // Append the instance variables to the file
+                    writer.write(type + "," + name + "," +  cost + "," + dayDue);
+                    writer.newLine();
+                    System.out.println("Expense successfully written to file");
+                    } catch (IOException ex) {
+                    System.out.println("Error: " + ex.getMessage());
+                    }
+                    
+                    addMtlyTypeTF.clear();
+                    addMtlyNameTF.clear();
+                    addMtlyCostTF.clear();
+                    addMtlyDDTF.clear();
+                    
+                    totMtlyExpLbl.setText("Monthly Expenses Total: $" + String.format("%,.2f", mtlyExpTV.getItems().stream().mapToDouble(MtlyExpense::getCost).sum())); // Update total Lbl
+                }
+                else if(cost < 0 && dayDue > 0 && dayDue < 32 ){
+                    mtlyExpTV.getItems().add(new MtlyExpense(type,name,-cost,dayDue));
+                    addMtlyExpPromptLbl.setText("Expense added.");
+                    
+                    try (BufferedWriter writer = new BufferedWriter(new FileWriter("expenses.csv", true))) {
+                    // Append the instance variables to the file
+                    writer.write(type + "," + name + "," +  -cost + "," + dayDue);
+                    writer.newLine();
+                    System.out.println("Expense successfully written to file");
+                    } catch (IOException ex) {
+                    System.out.println("Error: " + ex.getMessage());
+                    }
                     
                     addMtlyTypeTF.clear();
                     addMtlyNameTF.clear();
@@ -440,7 +535,7 @@ public class App extends Application {
                     totMtlyExpLbl.setText("Monthly Expenses Total: $" + String.format("%,.2f", mtlyExpTV.getItems().stream().mapToDouble(MtlyExpense::getCost).sum())); // Update total Lbl
                 }
                 else{
-                    addMtlyExpPromptLbl.setText("Please type a positive cost and a day between 0 and 32");
+                    addMtlyExpPromptLbl.setText("Please type a cost and a day between 0 and 32");
                 }
     
             }
@@ -452,7 +547,33 @@ public class App extends Application {
         Button removeMtlyExpBtn = new Button ("Remove");
         removeMtlyExpBtn.setOnAction(ActionEvent ->{
             mtlyExpTV.getItems().remove(mtlyExpTV.getSelectionModel().getSelectedItem());
+            
+            // Create Mtly expense object so that selection can be converted to csv format for comparison to file
+            MtlyExpense selectedItem = mtlyExpTV.getSelectionModel().getSelectedItem();
+           
+            // Remove selection from file
+            try {
+            List<String> lines = new BufferedReader(new FileReader("expenses.csv"))
+                    .lines()
+                    .filter(line -> !line.equals(selectedItem.toCSV()))
+                    .collect(Collectors.toList());
+
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter("expenses.csv"))) {
+                for (String line : lines) {
+                    writer.write(line);
+                    writer.newLine();
+                }
+            }
+
+            System.out.println("Expense successfully removed from file.");
+            
+        } catch (IOException e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+            
             mtlyExpTV.getSelectionModel().clearSelection();
+            
+            
             
             totMtlyExpLbl.setText("Monthly Expenses Total: $" + String.format("%,.2f", mtlyExpTV.getItems().stream().mapToDouble(MtlyExpense::getCost).sum())); // Update total Lbl
         }); // Remove an expense from the table
@@ -641,7 +762,7 @@ public class App extends Application {
         //        they entered of their paycheck per month.
         calcFbBtn.setOnAction(event -> {
         	 try {
-                 savedMonths = Integer.parseInt(calcFBMonthsTF.getText());
+                 savedMonths = Double.parseDouble(calcFBMonthsTF.getText());
         	 double totalAFSav = ub1.GetTotal()+(savedMonths * monthlySavings);
         	 calcFBPromptLbl.setText("Your balance will be around $" + String.format("%,.2f",totalAFSav) + " in " + savedMonths + " months.");
                  
@@ -748,7 +869,7 @@ public class App extends Application {
         series.setName("Total Saved Over Time");
 
         // Calculate and plot the data points for each month
-        for (int month = 0; month <= savedMonths; month++) {
+        for (double month = 0; month <= savedMonths; month++) {
             double totalSaved = month * monthlySavings; // Total savings by the end of the month
             series.getData().add(new XYChart.Data<>(month, totalSaved)); // Add data to series
         }
