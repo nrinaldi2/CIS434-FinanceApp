@@ -8,13 +8,12 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.HashSet;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.LineChart;
+import javafx.scene.chart.PieChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -26,7 +25,6 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
 
@@ -56,6 +54,15 @@ public class App extends Application {
         AnchorPane calculationsPane = new AnchorPane();
         Scene calculationsScene = new Scene(calculationsPane, 640, 480);
         
+        
+        //          ADD STYLE SHEET
+        hScene.getStylesheets().add("style.css");
+        expensesScene.getStylesheets().add("style.css");
+        calculationsScene.getStylesheets().add("style.css");
+        
+        // ACCOUNT OVERVIEW IMAGE
+        Image accOImage = new Image("AccountOverview.jpg");
+        ImageView hpImageView = new ImageView(accOImage);
         
         
         //          STAGE TITLE & CALL
@@ -95,6 +102,7 @@ public class App extends Application {
         
         
         
+        
         // Table View Declaration and Definition for Monthly Expenses
         
         TableView<MtlyExpense> mtlyExpTV = new TableView();
@@ -130,6 +138,7 @@ public class App extends Application {
         mtlyExpTV.setMaxHeight(360);
         
         
+        
         // Calculations page net income label
         Label netMtlyIncLbl = new Label("Net monthly income after expenses: $" + String.format("%,.2f", ub1.GetIncAfExp(mtlyExpTV.getItems().stream().mapToDouble(MtlyExpense::getCost).sum())));
         
@@ -160,12 +169,31 @@ public class App extends Application {
           }
         
         
+        
+        // Pie chart for earnings vs expenses
+        PieChart eViPC = new PieChart();     
+   
+        PieChart.Data slice1 = new PieChart.Data("Income",ub1.GetInc());
+        PieChart.Data slice2 = new PieChart.Data("Expenses",mtlyExpTV.getItems().stream().mapToDouble(MtlyExpense::getCost).sum());   
+
+        eViPC.getData().add(slice1);
+        eViPC.getData().add(slice2); 
+
+        eViPC.setScaleX(0.6);
+        eViPC.setScaleY(0.6);
+        
+        
+        
+        
+        
 //          ACCOUNT OVERVIEW SCENE
 
         // Account Overview Scene Title label
         Label titleLbl = new Label("Account Overview");
         titleLbl.getStyleClass().add("titleLbl");
-        titleLbl.setFont(Font.font("cursive"));
+//        titleLbl.setFont(new Font("Arial",18));
+        
+        
         
         
         // Account Overview Label Declarations
@@ -229,6 +257,8 @@ public class App extends Application {
                 updateIncPromptLbl.setText("Income updated");
                 updateIncTF.clear();
                 SVub1.saveInc("UserInc.txt", userInc);
+                
+                slice1.setPieValue(userInc);
                 }
                 else{
                     updateIncPromptLbl.setText("Please type a positive number greater than zero above.");
@@ -373,11 +403,14 @@ public class App extends Application {
         AnchorPane.setBottomAnchor(calcSceneBtn, 20.0);//Calculations Scene Btn
         AnchorPane.setRightAnchor(calcSceneBtn, 40.0);
         
+        AnchorPane.setBottomAnchor(hpImageView, 100.0);//Account overview image
+        AnchorPane.setRightAnchor(hpImageView, -50.0);
+        
         //Show all placements on Account Overview Scene
         hPane.getChildren().addAll(titleLbl, totUserAccBalLbl,updateBalLbl,
         updateBalTF, updateBalBtn,updateBalPromptLbl,userIncLbl,
         updateIncLbl,updateIncTF,updateIncBtn,updateIncPromptLbl,addEarnLbl,addEarnTF,addEarnBtn,undoEarnBtn,addEarnPromptLbl,
-        expSceneBtn,calcSceneBtn);
+        expSceneBtn,calcSceneBtn,hpImageView);
         
         
         
@@ -387,7 +420,14 @@ public class App extends Application {
    
         // Expenses Label Declarations
         Label expensesLbl = new Label("Expenses");
+        
+        expensesLbl.getStyleClass().add("titleLbl");
+//        expensesLbl.setFont(Font.font("cursive"));
+        
+        
         Label addMtlyExpLbl = new Label("Add Monthly Expense");
+        addMtlyExpLbl.getStyleClass().add("addMtlyExpLbl");
+        
         Label addMtlyTypeLbl = new Label("Type (utility, expected necessities, subscriptions, etc.): ");
         Label addMtlyNameLbl = new Label("Name: ");
         Label addMtlyCostLbl = new Label("Cost: ");
@@ -507,6 +547,8 @@ public class App extends Application {
                     System.out.println("Error: " + ex.getMessage());
                     }
                     
+                    slice2.setPieValue(mtlyExpTV.getItems().stream().mapToDouble(MtlyExpense::getCost).sum());
+                    
                     addMtlyTypeTF.clear();
                     addMtlyNameTF.clear();
                     addMtlyCostTF.clear();
@@ -527,6 +569,8 @@ public class App extends Application {
                     System.out.println("Error: " + ex.getMessage());
                     }
                     
+                    slice2.setPieValue(mtlyExpTV.getItems().stream().mapToDouble(MtlyExpense::getCost).sum());
+                    
                     addMtlyTypeTF.clear();
                     addMtlyNameTF.clear();
                     addMtlyCostTF.clear();
@@ -546,11 +590,19 @@ public class App extends Application {
         
         Button removeMtlyExpBtn = new Button ("Remove");
         removeMtlyExpBtn.setOnAction(ActionEvent ->{
-            mtlyExpTV.getItems().remove(mtlyExpTV.getSelectionModel().getSelectedItem());
             
             // Create Mtly expense object so that selection can be converted to csv format for comparison to file
             MtlyExpense selectedItem = mtlyExpTV.getSelectionModel().getSelectedItem();
-           
+            
+            if (selectedItem == null){
+                addMtlyExpPromptLbl.setText("No item selected to remove.");
+                return;
+            }
+            
+            // Remove item
+            mtlyExpTV.getItems().remove(mtlyExpTV.getSelectionModel().getSelectedItem());
+
+            
             // Remove selection from file
             try {
             List<String> lines = new BufferedReader(new FileReader("expenses.csv"))
@@ -559,23 +611,32 @@ public class App extends Application {
                     .collect(Collectors.toList());
 
             try (BufferedWriter writer = new BufferedWriter(new FileWriter("expenses.csv"))) {
+                if(!lines.isEmpty()){
                 for (String line : lines) {
                     writer.write(line);
                     writer.newLine();
                 }
+                totMtlyExpLbl.setText("Monthly Expenses Total: $" + String.format("%,.2f", mtlyExpTV.getItems().stream().mapToDouble(MtlyExpense::getCost).sum())); // Update total Lbl
+                }
+                else {
+                    writer.write("");
+                    totMtlyExpLbl.setText("Monthly Expenses Total: $" + String.format("%,.2f", 0.0)); // Update total Lbl
+                }
             }
-
+            
+            
             System.out.println("Expense successfully removed from file.");
             
-        } catch (IOException e) {
+        } 
+        catch (IOException e) {
             System.out.println("Error: " + e.getMessage());
         }
+            
+            slice2.setPieValue(mtlyExpTV.getItems().stream().mapToDouble(MtlyExpense::getCost).sum()); // Update eVi pie chart
             
             mtlyExpTV.getSelectionModel().clearSelection();
             
             
-            
-            totMtlyExpLbl.setText("Monthly Expenses Total: $" + String.format("%,.2f", mtlyExpTV.getItems().stream().mapToDouble(MtlyExpense::getCost).sum())); // Update total Lbl
         }); // Remove an expense from the table
         
         
@@ -663,23 +724,40 @@ public class App extends Application {
                 addUnexExpPromptLbl,addMtlyExpBtn,removeMtlyExpBtn,
                 addUnexBtn,mtlyExpTV,backBtn);
         
-        
-        
+   
+  
+   
         
 //          CALCULATIONS SCENE
         
         // Calulation Labels
         Label calcLbl = new Label("Calculations");
+        
+        calcLbl.getStyleClass().add("titleLbl");
+//        calcLbl.setFont(Font.font("cursive"));
+        
+        
         Label netAfSavLbl = new Label("Calculate net monthly income after desired savings");
+        netAfSavLbl.getStyleClass().add("netAfSavLbl");
+        
         Label pSavedLbl = new Label("Percent of income saved (monthly): ");
         Label pLbl = new Label ("%"); // Meant to be put next to respective text field
         Label pSaved2Lbl = new Label("Percent of income saved: " + "%"); // NOTE: This is fully set once first pSaved is entered
+        
         Label calcFBalLbl = new Label("Calculate future balance");
+        calcFBalLbl.getStyleClass().add("calcFBalLbl");
+        
         Label calcFBMonthsLbl = new Label("Months: ");
         
         // Calculation Info Prompt Labels
         Label netASPromptLbl = new Label(" "); // after savings calculation 
+        Label netASPrompt2Lbl = new Label(" "); // after savings calculation with amount saved per month
         Label calcFBPromptLbl = new Label(" "); // after future balance calculation
+        Label calcFBPrompt2Lbl = new Label(" "); // after future balance calculation with amount saved in amount of time
+        
+        Label investedPromptLbl = new Label(""); // displays investment calculation
+        investedPromptLbl.setWrapText(true);
+        investedPromptLbl.setMaxWidth(250);
         
         // Calculation Text Fields
         //months and percent of monthly earnings
@@ -694,8 +772,11 @@ public class App extends Application {
         backBtn2.setOnAction(ActionEvent ->{
         pSavedTF.clear(); // Clear text field  
         netASPromptLbl.setText(" "); // Clear prompt
+        netASPrompt2Lbl.setText(" "); // Clear prompt
         calcFBMonthsTF.clear(); // Clear text field
         calcFBPromptLbl.setText(" "); // Clear Prompt
+        calcFBPrompt2Lbl.setText(" "); // Clear Prompt
+        investedPromptLbl.setText("");
         
         totUserAccBalLbl.setText("Your total account balance is: $" + String.format("%,.2f", ub1.GetTotal())); // Refresh balance label
         userIncLbl.setText("Monthly Net Income: $" + String.format("%,.2f", ub1.GetInc())); // Refresh income label
@@ -719,8 +800,11 @@ public class App extends Application {
         sVsMtsGraphBtn.setOnAction(event -> {
             pSavedTF.clear(); // Clear text field
             netASPromptLbl.setText(" "); // Clear prompt
+            netASPrompt2Lbl.setText(" "); // Clear prompt
             calcFBMonthsTF.clear(); // Clear text field
             calcFBPromptLbl.setText(" "); // Clear Prompt
+            calcFBPrompt2Lbl.setText(" "); // Clear Prompt
+            investedPromptLbl.setText("");
             
             
         	LineChart<Number, Number> lineChart = createSavingsGraph(); // Create graph
@@ -731,12 +815,29 @@ public class App extends Application {
         
         
         Button InvestedFunds = new Button("Project savings if invested in S&P500");
+        //Displays what the total compounded worth of the savings could be at the end of the set term in months if invested in the S&P500 index assuming 8% annual return
+        //8% Per year also averages 0.67% return on investment per month as the set rate
+        InvestedFunds.setOnAction(event -> {
+        	savedwithinterest = monthlySavings;
+        for(int i = 0; i <= savedMonths; i++) {
+        	
+        	savedwithinterest *= 1.0067;
+        	savedwithinterest += monthlySavings;
+        }
+        investedPromptLbl.setText("This is the worth of your savings if invested throughout that entire time: $" + String.format("%,.2f", savedwithinterest));
+        });
+        
+        
+        
+        
         
 //Calculations for providing income based on the saved percent by the user -Gavin Wells
 //Printing out currently just in System. Need Nick to make a text field to print out the projected income post savings
         netAfSavBtn.setOnAction(event -> {
             try {
             double savedPC = Double.parseDouble(pSavedTF.getText()); // (NICK) Adjusted to parse for double (in case user wants decimal percentage)
+            
+            if(savedPC > 0 && savedPC < 100){
             pSaved2Lbl.setText("Percent of income saved: " + savedPC + "%");
             
             System.out.println("Retrieved income for calculation: " + ub1.GetInc());                                                                          
@@ -744,8 +845,17 @@ public class App extends Application {
             monthlySavings = ub1.GetIncAfExp(mtlyExpTV.getItems().stream().mapToDouble(MtlyExpense::getCost).sum()) * (savedPC / 100.0);             //(NICK) Swapped local variable for direct income retrieval from 
                                                                                 //       ub1 object
             netASPromptLbl.setText("New monthly earnings after savings: $" + String.format("%,.2f", newMonthlyEarn)); // (NICK) Savings text is now sent to prompt for it
+            netASPrompt2Lbl.setText("You will be saving $" + String.format("%,.2f", monthlySavings) + " per month.");
             
-            pSavedTF.clear(); // Clear text field           
+            
+            pSavedTF.clear(); // Clear text field
+            }
+            else{
+                netASPromptLbl.setText("Please enter a percentage between 0 and 100");
+                netASPrompt2Lbl.setText("");
+                
+            }
+            
             } 
             catch (NumberFormatException e) {
                 System.out.println("Invalid input: " + e.getMessage()); //(NICK) Rearranged catch so that any errors caught during calc attempt are output
@@ -756,6 +866,7 @@ public class App extends Application {
         //End of Calculation for percent of saved monthly income
         
         
+        
         //Start of Calculation for Total Saved amount after modified income 
         // (NICK) My original intention for this calculation was to show what the user's 
         //        balance would be in x amount of months after saving whatever percentage 
@@ -763,10 +874,16 @@ public class App extends Application {
         calcFbBtn.setOnAction(event -> {
         	 try {
                  savedMonths = Double.parseDouble(calcFBMonthsTF.getText());
+                 if(savedMonths > 0){
         	 double totalAFSav = ub1.GetTotal()+(savedMonths * monthlySavings);
         	 calcFBPromptLbl.setText("Your balance will be around $" + String.format("%,.2f",totalAFSav) + " in " + savedMonths + " months.");
+                 calcFBPrompt2Lbl.setText("You will have saved $" + String.format("%,.2f",(savedMonths * monthlySavings)) + " in that time.");
                  
                  calcFBMonthsTF.clear(); // Clear text field
+                 }
+                 else{
+                     calcFBPromptLbl.setText("Please enter a number of months greater than zero");
+                 }
                  } 
                  catch (NumberFormatException e) {
                  System.out.println("Invalid input: " + e.getMessage());
@@ -776,17 +893,7 @@ public class App extends Application {
         
         
         
-        //Displays what the total compounded worth of the savings could be at the end of the set term in months if invested in the S&P500 index assuming 8% annual return
-        //8% Per year also averages 0.67% return on investment per month as the set rate
-        InvestedFunds.setOnAction(event -> {
-        	savedwithinterest = monthlySavings;
-        for(int i = 0; i <= savedMonths; i++) {
-        	
-        	savedwithinterest *= 1.0067;
-        	savedwithinterest += monthlySavings;
-        }
-        System.out.println("This is the worth of your savings if invested throughout that entire time: $" + String.format("%,.2f", savedwithinterest));
-        });
+        
         
         
         
@@ -800,7 +907,7 @@ public class App extends Application {
         AnchorPane.setLeftAnchor(netMtlyIncLbl, 40.0);
         
         
-        AnchorPane.setTopAnchor(netAfSavLbl, 130.0); // Net Monthly Income After Savings Lbl
+        AnchorPane.setTopAnchor(netAfSavLbl, 140.0); // Net Monthly Income After Savings Lbl
         AnchorPane.setLeftAnchor(netAfSavLbl, 40.0);
         
         AnchorPane.setTopAnchor(pSavedLbl, 160.0); // Percent Saved Lbl
@@ -818,8 +925,11 @@ public class App extends Application {
         AnchorPane.setTopAnchor(netASPromptLbl, 210.0); // Net Monthly Income After Savings Prompt Lbl
         AnchorPane.setLeftAnchor(netASPromptLbl, 40.0);
         
+        AnchorPane.setTopAnchor(netASPrompt2Lbl, 225.0); // Net Monthly Income After Savings Prompt 2 Lbl
+        AnchorPane.setLeftAnchor(netASPrompt2Lbl, 40.0);
         
-        AnchorPane.setTopAnchor(calcFBalLbl, 240.0); // Calculate Future Balance Lbl
+        
+        AnchorPane.setTopAnchor(calcFBalLbl, 250.0); // Calculate Future Balance Lbl
         AnchorPane.setLeftAnchor(calcFBalLbl, 40.0);
         
         AnchorPane.setTopAnchor(pSaved2Lbl, 270.0); // Percent of Monthly Income Saved (monthly)(Relies on past input)
@@ -837,21 +947,35 @@ public class App extends Application {
         AnchorPane.setTopAnchor(calcFBPromptLbl, 380.0); // Calculate Future Balance Prompt Lbl
         AnchorPane.setLeftAnchor(calcFBPromptLbl, 40.0);
         
+        AnchorPane.setTopAnchor(calcFBPrompt2Lbl, 395.0); // Calculate Future Balance Prompt 2 Lbl
+        AnchorPane.setLeftAnchor(calcFBPrompt2Lbl, 40.0);
+        
         
         AnchorPane.setBottomAnchor(backBtn2, 20.0); // Back Btn
         AnchorPane.setLeftAnchor(backBtn2, 40.0);
         
+        
         AnchorPane.setBottomAnchor(sVsMtsGraphBtn,350.0); 
         AnchorPane.setLeftAnchor(sVsMtsGraphBtn, 400.0);
         
+        
         AnchorPane.setBottomAnchor(InvestedFunds, 310.0);
         AnchorPane.setLeftAnchor(InvestedFunds, 400.0);
+        
+        AnchorPane.setTopAnchor(investedPromptLbl, 175.0);
+        AnchorPane.setLeftAnchor(investedPromptLbl, 400.0);
+        
+        
+        AnchorPane.setBottomAnchor(eViPC, -50.0); // Earnings vs. Expenses Pie Chart
+        AnchorPane.setRightAnchor(eViPC, -90.0);
+        
+        
         
         calculationsPane.getChildren().addAll(calcLbl,netMtlyIncLbl,
                 netAfSavLbl,pSavedLbl,pLbl,pSaved2Lbl,
                 calcFBalLbl,calcFBMonthsLbl,netASPromptLbl,
                 calcFBPromptLbl,pSavedTF,calcFBMonthsTF,
-                netAfSavBtn,calcFbBtn, backBtn2, sVsMtsGraphBtn, InvestedFunds);
+                netAfSavBtn,calcFbBtn, backBtn2, sVsMtsGraphBtn, InvestedFunds,netASPrompt2Lbl,calcFBPrompt2Lbl,investedPromptLbl,eViPC);
         
     }
  // Create the graph based on total savings per month

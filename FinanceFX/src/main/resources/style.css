@@ -1,0 +1,63 @@
+.root{
+    -fx-background-color: floralwhite;
+}
+
+.button{
+    -fx-background-color: silver;
+    -fx-border-color: slategray;
+    -fx-border-radius: 4;
+}
+
+.button:hover{
+    -fx-background-color: whitesmoke;
+    -fx-text-fill: tan;
+}
+
+.list-cell{
+    -fx-background-color: snow;
+    -fx-text-fill: black;
+}
+
+.list-cell:even{
+    -fx-background-color: lightgrey;
+}
+
+.list-cell:filled:hover{
+    -fx-scale-y: 1.15;
+    -fx-font-size: 14px;
+    -fx-background-color: skyblue;
+} 
+
+.list-cell:filled:selected:focused, .list-cell:filled:selected{
+    -fx-scale-y: 1.15;
+    -fx-font-size: 14px;
+    -fx-background-color: skyblue;
+    -fx-text-fill: black;
+}
+
+.titleLbl{
+    -fx-font-family: 'serif';
+    -fx-font-size: 18px;
+}
+
+.expensesLbl{
+    -fx-font-family: 'serif';
+    -fx-font-size: 18px;
+}
+
+.calcLbl{
+    -fx-font-family: 'serif';
+    -fx-font-size: 18px;
+}
+
+.netAfSavLbl{
+    -fx-font-weight: bold;
+}
+
+.calcFBalLbl{
+    -fx-font-weight: bold;
+}
+
+.addMtlyExpLbl{
+    -fx-font-weight: bold;
+}
